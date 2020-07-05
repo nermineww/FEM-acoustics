@@ -1,19 +1,6 @@
-% -------------------------------------------------------------------------
-% Universidade Federal de Santa Catarina
-% Programa de Pós-Graduação em Engenharia Mecânica
-% Laboratório de Vibrações e Acústica - LVA
-% Disciplina: Vibroacústica Computacional - EMC410104
-% Professor: Dr. Júlio A. Cordioli
-% Mestrando: Augusto R. C. de Sousa, Eng
-% Matrícula: 201604230
-% -------------------------------------------------------------------------
-% Este código utiliza o Método dos Elementos Finitos para a avaliação do
-% sistema proposto no Trabalho 3 da disciplina.
-% -------------------------------------------------------------------------
-% Início do código
-% -------------------------------------------------------------------------
 
-%% Cavidade
+
+%% Cavity
 %%
 clear all; clc;
 
@@ -22,22 +9,22 @@ Ly = 0.24;
 Lz = 0.54;
 d = 0.02;
 
-rhoac = 1.1; %% Densidade aproximada do ar T = 20°C
-co = 343;   %% Velocidade do som no ar T = 20°C, p_o = 101,325 kPa
+rhoac = 1.1; %% Density of air for T = 20Â°C
+co = 343;   %% Speed of sound at T = 20Â°C, p_o = 101,325 kPa
 
 a = d/2;
 
-Nx = round(Lx/d); %Número de elementos em x
-Ny = round(Ly/d); %Número de elementos em y
-Nz = round(Lz/d); %Número de elementos em z
-Nnx = Nx+1; %Número de nós em x
-Nny = Ny+1; %Número de nós em y
-Nnz = Nz+1; %Número de nós em z
-Ntotal = Nx*Ny*Nz; %Número total de elementos
-Nn = (Nx+1)*(Ny+1)*(Nz+1); %Número total de nós
-N = 8; %Número de nós por elemento
+Nx = round(Lx/d); %Number of elements in the x axis
+Ny = round(Ly/d); %Number of elements in the y axis
+Nz = round(Lz/d); %Number of elements in the z axis
+Nnx = Nx+1; %Number of nodes in the x axis
+Nny = Ny+1; %Number of nodes in the y axis
+Nnz = Nz+1; %Number of nodes in the z axis
+Ntotal = Nx*Ny*Nz; %Number of total ements
+Nn = (Nx+1)*(Ny+1)*(Nz+1); % Number of total nodes
+N = 8; %Nodes per element
 
-%% Matrizes de inércia e rigidez acústica do elemento
+%% Inertial and acoustic rigidity matrices
 syms xi1 xi2 xi3
 
 Be = [1 -1 -1 -1 1 1 1 -1;
@@ -57,7 +44,7 @@ g3 = diff(g,xi3);
 He = eval(inv(Be')*int(int(int((((1/a^2)*g1*g1') + ((1/a^2)*g2*g2') + ((1/a^2)*g3*g3'))*(a^3),xi1,-1,1),xi2,-1,1),xi3,-1,1)*inv(Be));
 Qe = eval((1/co^2)*inv(Be')*int(int(int(g*g'*(a^3),xi1,-1,1),xi2,-1,1),xi3,-1,1)*inv(Be));
 
-%% Matriz de conectividade da cavidade para o problema proposto
+%% Connectivity matrix
 MconAc = zeros(Nx*Ny,N);
 for k = 1:Nz
     for j = 1:Ny
@@ -101,7 +88,7 @@ for k = 1:Nz
     end
 end
 
-Ngl = 1; %Número de graus de liberdade por nó = 1
+Ngl = 1; %Degrees of freedom per node = 1
 for i=1:N
    for j=1:N  
        Qe_s(j+(i-1)*N).sub = Qe((1+(j-1)*Ngl):(Ngl+(j-1)*Ngl),(1+(i-1)*Ngl):(Ngl+(i-1)*Ngl));
@@ -109,10 +96,10 @@ for i=1:N
    end
 end
 
-%% Pre-alocação das matrizes de massa e rigidez do sistema
+%% Pre-allocating mass and rigidity matrices
 Q = zeros(Nn);
 H = zeros(Nn); 
-%% Montagem das Matrizes Globais
+%% Global matrices
 for i=1:Ntotal
     for k=1:N
         for j=1:N
@@ -121,17 +108,17 @@ for i=1:Ntotal
         end
     end
 end
-%% Extraindo autovalores e autovetores
+%% Eigenvalues and eigenvectors
 Qsparse = sparse(Q);
 Hsparse = sparse(H);
 
 Modos = 40;
 nn = 1;
-    [A,Wn_Cavidade]=eigs(Hsparse,Qsparse,Modos,'SM'); %Extraindo os Autovetores (A) e Autovalores (Wn^2) de M e K
-    resultados.Wn_Cavidade = diag(Wn_Cavidade).^(0.5)/(2*pi); % freq. naturais;
+    [A,Wn_Cavidade]=eigs(Hsparse,Qsparse,Modos,'SM'); %Extracting eigenvectors (A) and eigenvalues (Wn^2) of M and K
+    resultados.Wn_Cavidade = diag(Wn_Cavidade).^(0.5)/(2*pi); % Eigenfrequencies;
     [Fn_Cavidade.fn, ind.fn] = sort(resultados.Wn_Cavidade);
 
-%% Criando a malha
+%% Meshing
 
 xp1 = 0:d:Lx;
 yp1 = 0:d:Ly;
@@ -139,7 +126,7 @@ zp1 = 0:d:Lz;
 
 [X1,Y1,Z1] = meshgrid(xp1,yp1,zp1);
 
-% Cálculo da pressão
+% Calculating pressure
 Pref = zeros(1,Modos);
 for m = 1:Modos
     N=ind.fn(m,1);
@@ -158,9 +145,9 @@ end
 n=1;
 Nm = 5;
 
-%% Figuras da cavidade
+%% Plotting results for cavity
 
-% a) Primeiras 5 frequências naturais e modos da cavidade
+% a) First 5 eigenfrequencies and eigenmodes for the cavity
 figure(1)
 for i = 1:1:(Nm-1)
 subplot(2,2,i)
@@ -186,33 +173,33 @@ title(['Forma modal ' num2str(5) ' da cavidade, f_n = ' num2str(Fn_Cavidade.fn(5
 axis equal
 colorbar
 
-%% Placa
-%% Propriedades da porta
-rhostr = 7850; %Densidade do material
-E = 205E9; %Módulo de elasticidade do material
-poisson = 0.28; %Coeficiente de Poisson
+%% Plate
+%% Mechanical properties
+rhostr = 7850; %Density
+E = 205E9; %Young's modules
+poisson = 0.28; %Poisson's coefficient
 EP = E/(1-poisson^2); 
-G = E/(2*(1+poisson)); %Módulo de cisalhamento (ou de rigidez) do material
-h = 0.002; %Espessura da porta
-I = (h^3)/12; %Momento de inércia de área (segundo)
-Lx = 0.2; %Largura em x
-Ly = 0.5; %Largura em y
+G = E/(2*(1+poisson)); %Shear module
+h = 0.002; %Door's thickness
+I = (h^3)/12; %Moment of inertia
+Lx = 0.2; %Length in the x direction
+Ly = 0.5; %Length in the y direction
 
-%% Propriedades da malha e dos elemento
-dx = 0.02; %Tamanho do elemento na direção x
-dy = 0.02; %Tamanho do elemento na direção y
+%% Mesh's and element's properties
+dx = 0.02; %Element size in the x direction
+dy = 0.02; %Element size in the y direction
 a = dx/2;
 b = dy/2;
-Nx = round((Lx)/dx); %Elementos em x
-Ny = round((Ly)/dy); %Elementos em y
-Ne = Nx*Ny; %Número total de elementos
-Nn_x = Nx+1; %Nós em x
-Nn_y = Ny+1; %Nós em y
-Nnt = Nn_x*Nn_y; %Número total de nós
-Nn_e = 4;%Nós por elemento
-Ngl_n = 3;%Graus de Liberdade por nó
-Ntgls = Nnt*Ngl_n;%Total de Graus de Liberdade do sistema
-%% Matriz Ae do elemento, de acordo com Petyt (2010)
+Nx = round((Lx)/dx); %Elements in the x direction
+Ny = round((Ly)/dy); %Elements in the y direction
+Ne = Nx*Ny; %Total number of elements
+Nn_x = Nx+1; %Nodes in the x direction
+Nn_y = Ny+1; %Nodes in the y direction
+Nnt = Nn_x*Nn_y; %Total number of nodes
+Nn_e = 4;%Nodes per element
+Ngl_n = 3;%Degrees of freedom per node
+Ntgls = Nnt*Ngl_n;%Total number of degrees of freedom
+%% Ae matrix, from Petyt's book (2010)
 [Ae] = [1 -1 -1 1 1 1 -1 -1 -1 -1 1 1;
         0 0 1/b 0 -1/b -2/b 0 1/b 2/b 3/b -1/b -3/b;
         0 -1/a 0 2/a 1/a 0 -3/a -2/a -1/a 0 3/a 1/a;
@@ -226,20 +213,21 @@ Ntgls = Nnt*Ngl_n;%Total de Graus de Liberdade do sistema
         0 0 1/b 0 -1/b 2/b 0 1/b -2/b 3/b -1/b -3/b;
         0 -1/a 0 2/a -1/a 0 -3/a 2/a -1/a 0 -3/a -1/a];
 
-%% Matriz constitutiva do material , [D]
+%% Constitutive matrix of the material , [D]
 D = [EP EP*poisson 0; EP*poisson EP 0; 0 0 G];
-%% Polinômio p(csi,eta) e vetor {X}
+%% PolinÃ´mio p(csi,eta) e vetor {X}
 syms csi eta
 p = [1; csi; eta; csi^2; csi*eta; eta^2; csi^3; csi^2*eta; csi*eta^2; eta^3; csi^3*eta; csi*eta^3];
 X(1,1:12) = (1/(a^2))*[0 0 0 2 0 0 6*csi 2*eta 0 0 6*csi*eta 0];
 X(2,1:12) = (1/(b^2))*[0 0 0 0 0 2 0 0 2*csi 6*eta 0 6*csi*eta];
 X(3,1:12) = (2/(a*b))*[0 0 0 0 1 0 0 2*csi 2*eta 0 3*(csi^2) 3*(eta^2)];
 
-%% Matrizes elementares de Massa e Rigidez e vetor de forças unitário
+%% Elementary matrices of mass and rigidity, and vector of unitary forces
 Me = eval(inv(Ae')*(int(int(rhostr*h*p*p'*a*b,csi,-1,1),eta,-1,1))*inv(Ae));
 Ke = eval(inv(Ae')*(int(int(I*X'*D*X*a*b,csi,-1,1),eta,-1,1))*inv(Ae));
 fe  = eval(inv(Ae')*(int(int(p*a*b,csi,-1,1),eta,-1,1)));
-%% Matriz de conectividade
+
+%% Connectivity matrices
 MConS = zeros(Ne,Nn_e+1);
 aux = 0;
 for i=1:Ne
@@ -261,7 +249,8 @@ for i=1:Ne
         end    
     end
 end
-%% Determinação das matrizes de massa e rigidez para cada nó
+
+%% Mass and rigidity matrices for each node
 
 for i=1:Nn_e
    for j=1:Nn_e
@@ -272,7 +261,7 @@ for i=1:Nn_e
    end
 end
 
-%% Matrizes globais
+%% Global matrices
 Kglobal = zeros(Ntgls);
 Mglobal = zeros(Ntgls);
 Mconec = MConS(:,2:(Nn_e+1));
@@ -286,7 +275,7 @@ for i=1:Ne
     end
 end
 
-%% Graus de liberdade referente às dobradiças e fechadura
+%% Degrees of freedom from the door's hinges
 
 for j = 1:1:Ny 
         FirstEy(j) = 1 + Nx*(j-1);
@@ -294,24 +283,22 @@ for j = 1:1:Ny
         LastEy(j) = Nx*(j);
         BeforeLastEy(j) = LastEy(j)-1;
 end
-% Calcula quais linhas e elementos está aplicado o primiero engaste -
-% dobradiça inferior
+% Calculating to which lines and elements of the global matrix the bezel of the inferior hinge is applied
 L1 = round(0.1/dy + 1); E1 = FirstEy(L1); E11 = SecondEy(L1);
 L2 = round((0.1+dy)/dy); E2 = FirstEy(L2); E22 = SecondEy(L2);
 
-% Calcula quais linhas e elementos está aplicado o segundo engaste -
-% dobradiça superior
+% Calculating to which lines and elements of the global matrix the bezel of the superior hinge is applied
 L3 = round((0.5-0.1)/dy); E3 = FirstEy(L3); E33 = SecondEy(L3);
 L4 = round((0.5-(0.1+dy))/dy); E4 = FirstEy(L4); E44 = SecondEy(L4);
 
-%Calcula quais as linhas e elementos está aplicado o engaste da fechadura
+%Calculating to which lines and elements of the global matrix the bezel of the door's knob is applied
 L5 = round((0.5-0.22)/dy); E5 = LastEy(L5); E55 = BeforeLastEy(L5);
 L6 = round((0.5-(0.22+dy))/dy); E6 = LastEy(L6); E66 = BeforeLastEy(L6);
 L7 = round((0.5-(0.22+(2*dy)))/dy); E7 = LastEy(L7); E77 = BeforeLastEy(L7);
 L8 = round((0.5-(0.22+(3*dy)))/dy); E8 = LastEy(L8); E88 = BeforeLastEy(L8);
 
-% Nós que devem ser retirados devido às dobradiças
-N1 = Mconec(E1,:); N11 = Mconec(E11,:);            %Nós do elemento 1...
+% Removing nodes from the hinges
+N1 = Mconec(E1,:); N11 = Mconec(E11,:);            %First element...
 N2 = Mconec(E2,:); N22 = Mconec(E22,:);
 N3 = Mconec(E3,:); N33 = Mconec(E33,:);
 N4 = Mconec(E4,:); N44 = Mconec(E44,:);
@@ -323,8 +310,8 @@ N8 = Mconec(E8,:); N88 = Mconec(E88,:);
 Nos = [N1 N3 N5 N6];
 
 Nos = unique(Nos);
-% Os GL a serem excluidos
-GL = zeros(1,length(Nos)*Ngl_n); % Criando o vetor de tamanhao necessário para alocar GL's
+% Degrees of freedom to be excluded
+GL = zeros(1,length(Nos)*Ngl_n); % Vector to allocate the DoFs
 for j=1:1:length(Nos)
    GL(1,j*3) = Nos(j)*3;
    GL(1,(j*3)-1) = Nos(j)*3 - 1;
@@ -332,21 +319,21 @@ for j=1:1:length(Nos)
 end
 
     for j=1:length(GL)
-        Mglobal(:,GL(j)-j+1) = []; %Tirando a coluna do nó restrito da matriz M
-        Mglobal(GL(j)-j+1,:) = []; %Tirando a linha do nó restrito da Matriz M
-        Kglobal(:,GL(j)-j+1) = []; %Tirando a coluna do nó restrito da matriz K
-        Kglobal(GL(j)-j+1,:) = []; %Tirando a linha do nó restrito da Matriz K
+        Mglobal(:,GL(j)-j+1) = []; %Removing the column of the restringed node in the matrix M
+        Mglobal(GL(j)-j+1,:) = []; %Removing the row of the restringed node in the matrix M 
+        Kglobal(:,GL(j)-j+1) = []; %Removing the column of the restringed node in the matrix K
+        Kglobal(GL(j)-j+1,:) = []; %Removing the row of the restringed node in the matrix K
     end
     
-%% Autovalor e Autovetor
+%% Eigenvalues and eigenvectors
 Modos = [10 20 30 40];
 Nfn = 20;
 M = sparse(Mglobal);
 K = sparse(Kglobal);
 [Avet, Wn_Placa] = eigs(K,M,Modos(4),'SM');
-resultados.Wn_Placa = diag(Wn_Placa).^(0.5)/(2*pi); % freq. naturais;
+resultados.Wn_Placa = diag(Wn_Placa).^(0.5)/(2*pi); % Eigenfrequencies;
 [Fn_Placa.fn, ind.fn] = sort(resultados.Wn_Placa);
-%% Incluindo os GL das condicoes de contorno
+%% DoFs of boundary conditions
    for j=1:length(GL)
         [s1,s2]=size(Avet);
         nline=zeros(1,s2);
@@ -355,16 +342,16 @@ resultados.Wn_Placa = diag(Wn_Placa).^(0.5)/(2*pi); % freq. naturais;
         Avet=cat(1,V1,nline,V2);
    end
     
-%% Excluindo Rotações
+%% Excluding rotations
   Rot=Avet(1:3:end,:);
   
-%% Criando a malha
+%% Meshing
 Lxp = 0:dx:Lx;  
 Lyp = 0:dy:Ly;   
        
 [X,Y] = meshgrid(Lxp,Lyp);
 
-%% Selecionando as formas modais a serem plotadas
+%% Selecting modes to be plotted
 
 for k=1:Nfn
 modo=Rot/max(max(Rot));
@@ -375,9 +362,9 @@ modo=Rot/max(max(Rot));
         end
 eval(['f_m',num2str(k),'=vec2mat(modo(:,',num2str(ind.fn(k,1)),'),Nn_x);'])
 end
-%% Cálculo e representação das 5 primeiras frequências naturais da placa
+%% First 5 eigenfrequencies of the plate
 
-%Modos 1 a 4
+%Modes 1 to 4
 figure(3)
 for n = 1:1:length(Modos);
 subplot(2,2,n)
@@ -393,7 +380,7 @@ zlabel('Amplitude');
 title(['Forma modal ' num2str(n) ' da placa, f_n =' num2str(Fn_Placa.fn(n)) ' Hz']);
 end
 
-%Modo 5
+%Mode 5
 figure(4)
 set(gcf,'papersize',[20 10])
 surf(X,Y,eval(['f_m',num2str(5)]))
@@ -406,7 +393,7 @@ ylabel('Ly (m)');
 zlabel('Amplitude');
 title(['Forma modal ' num2str(5) ' da placa, f_n = ' num2str(Fn_Placa.fn(5)) ' Hz']);
 
-%% Acoplamento
+%% Coupling
 syms xi1 xi2 xi3 csi eta
 xi2 = -1;
 xi1 = csi;
@@ -414,12 +401,12 @@ xi3 = eta;
 g = subs(g);
 Se = eval(inv(Ae')*int(int(p*g'*a*b,csi,-1,1),eta,-1,1)*inv(Be));
 Re = Se';
-%% Determinação das submatrizes para cada nó
+%% DeterminaÃ§Ã£o das submatrizes para cada nÃ³
 
-NAc = 1; % Número de graus de liberdade acústicos
-NSt = 3; % Número de graus de liberdade da estrutura
-NnAc = 8; % Número de nós por elemento da cavidade acústica
-NnS = 4; % Número de nós por elemento da placa
+NAc = 1; % NÃºmero de graus de liberdade acÃºsticos
+NSt = 3; % NÃºmero de graus de liberdade da estrutura
+NnAc = 8; % NÃºmero de nÃ³s por elemento da cavidade acÃºstica
+NnS = 4; % NÃºmero de nÃ³s por elemento da placa
 NnSt = 858; % Numero de graus de liberdade estrutural
 Nn = Nnx*Nny*Nnz; % Numero de graus de liberdade da cavidade
 
@@ -430,13 +417,13 @@ for i=1:NnAc
    end
 end
 
-%% Montagem das matrizes globais
-% Determinando os elementos da cavidade novamente
+%% Global matrices
+% Cavity's elements
 LxAc = 0.24;
 LyAc = 0.24;
 d = 0.02;
-NxAc = LxAc/d; %Número de elementos em x
-NyAc = LyAc/d; %Número de elementos em y
+NxAc = LxAc/d; %Number of elements in the x direction
+NyAc = LyAc/d; %Number of elements in the y direction
 Id_lS = MConS;
 Id_lAc = MconAc;
 S_parc = zeros(NnSt,Nn);
@@ -449,7 +436,7 @@ for i=1:NxAc*NyAc
     end
 end
 
- R_parc = S_parc'; % Matrizes R e S
+ R_parc = S_parc'; % Matrices R and S
  
 for j=1:length(GL)
         R_parc(:,GL(j)-j+1) = [];
@@ -463,21 +450,21 @@ O = zeros(size(R'));
 M1 = [M O; -R Q];
 M2 = [K S; O' H];
 
-Nfn = 100; %Numero de fn a serem calculadas
+Nfn = 100; %Number of eigenfrequencies to be calculated
 M1sparse=sparse(M1);
 M2sparse=sparse(M2);
-    [A_Acoplado,Wn_Acoplado]=eigs(M2sparse,M1sparse,Nfn,'sm'); %Extraindo os Autovetores (A) e Autovalores (Wn^2) de M e K
-    resultados.Wn_Acoplado = diag(Wn_Acoplado).^(0.5)/(2*pi); % freq. naturais;
+    [A_Acoplado,Wn_Acoplado]=eigs(M2sparse,M1sparse,Nfn,'sm'); %Eigenvectors (A) and Eigenvalues (Wn^2) of M and K
+    resultados.Wn_Acoplado = diag(Wn_Acoplado).^(0.5)/(2*pi); % Eigenfrequencies;
     [Fn_Acoplado.fn, ind.fn_Acoplado] = sort(resultados.Wn_Acoplado);
 
-%% Calculo do NPS dentro da cavidade e definindo vetor de força e posição do ponto para calculo de NPS
-px=0.16; py=0; pz=0.42; Nnx_st = 11; Ngln=3; d=0.02; %coordenadas da aplicação da força
-no_st=(Nnx_st*(pz/0.02) + (px/0.02)+1)*Ngln-4; %Calculo do nó onde foi aplicada a força
+%% SPL inside the cavity, force vector and position of the point at which the SPL is computed
+px=0.16; py=0; pz=0.42; Nnx_st = 11; Ngln=3; d=0.02; %Coordinates of the applied force
+no_st=(Nnx_st*(pz/0.02) + (px/0.02)+1)*Ngln-4; %Node at which the force is applied
 forca=zeros(length(M),1);
-forca(no_st,1)= 1; %Força unitária no ponto A
+forca(no_st,1)= 1; %Unit force at point A
 
-px_ac=0.1; py_ac=0.16; pz_ac=0.34; %coordenadas da coleta de pressão
-no_ac = (px_ac/d + 1) + (NxAc+1)*(py_ac/d) + (pz_ac/d)*((NxAc+1)*(NyAc+1)); %Nó da coleta de pressão
+px_ac=0.1; py_ac=0.16; pz_ac=0.34; %Coordinates of the measured pressure
+no_ac = (px_ac/d + 1) + (NxAc+1)*(py_ac/d) + (pz_ac/d)*((NxAc+1)*(NyAc+1)); %Node at which pressure is computed
 
 freq = 100:2:700;
 omega = 2*pi*freq;
@@ -489,14 +476,16 @@ for i=1:length(freq)
     Lp(:,i) = (-omega(i)^2*w'*S)/(-omega(i)^2*Q + H);
 end
 
+%Plotting
+
 figure(5)
 semilogx(freq,dlmread('COMSOL2.txt'));
 hold on
 semilogx(freq,20*log10(abs(Lp(no_ac,:))/(20*10^(-6))))
 set(gca,'fontsize',25)
-legend('NPS - MATLAB', 'NPS - COMSOL');
-ylabel('NPS (dB)');
-xlabel('Frequência (Hz)');
+legend('SPL - MATLAB', 'SPL - COMSOL');
+ylabel('SPL [dB]');
+xlabel('Frequency [Hz]');
 xlim([100,700])
 grid on
 
@@ -507,9 +496,9 @@ semilogx(freq,dlmread('COMSOL2.txt'));
 hold on
 semilogx(freq,20*log10(abs(Lp(no_ac,:))/(20*10^(-6))))
 set(gca,'fontsize',25)
-legend('NPS - COMSOL (sem abertura)', 'NPS - COMSOL (com abertura)','NPS - MATLAB (sem abertura)');
-ylabel('NPS (dB)');
-xlabel('Frequência (Hz)');
+legend('SPL - COMSOL (closed cavity)', 'SPL - COMSOL (open cavity)','SPL - MATLAB (closed cavity)');
+ylabel('SPL [dB]');
+xlabel('Frequency [Hz]');
 xlim([100,700])
 grid on
 
